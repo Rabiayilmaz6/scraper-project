@@ -92,6 +92,7 @@ async def get_campgrounds(
                 "price_low": campground.price_low,
                 "price_high": campground.price_high,
                 "photo_url": campground.photo_url,
+            "address": campground.address,
             }
             campgrounds_list.append(campground_dict)
         

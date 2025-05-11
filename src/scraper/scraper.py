@@ -134,3 +134,74 @@ def run_scraper():
 
 if __name__ == "__main__":
     run_scraper()
+
+def update_addresses(batch_size: int = 100):
+    """
+    Update addresses for campgrounds that don't have an address.
+    Process in batches to avoid overwhelming the geocoding service.
+    
+    Args:
+        batch_size: Number of campgrounds to process in each batch
+    """
+    import time
+    from src.db.connection import SessionLocal
+    from src.db.models import CampgroundDB
+    from src.scraper.geocoding import get_address
+    
+    logger.info("Starting address update process...")
+    
+    db = SessionLocal()
+    try:
+        # Adresi olmayan kamp alanlarını bul
+        campgrounds_without_address = db.query(CampgroundDB).filter(
+            CampgroundDB.address.is_(None),
+            CampgroundDB.latitude.isnot(None),
+            CampgroundDB.longitude.isnot(None)
+        ).all()
+        
+        logger.info(f"Found {len(campgrounds_without_address)} campgrounds without address")
+        
+        if not campgrounds_without_address:
+            logger.info("No campgrounds found that need address updates.")
+            return 0
+        
+        # Batch'ler halinde işle
+        updated_count = 0
+        total_batches = (len(campgrounds_without_address) + batch_size - 1) // batch_size
+        
+        for i in range(0, len(campgrounds_without_address), batch_size):
+            batch = campgrounds_without_address[i:i+batch_size]
+            current_batch = i // batch_size + 1
+            logger.info(f"Processing batch {current_batch}/{total_batches} ({len(batch)} campgrounds)")
+            
+            batch_updated = 0
+            for campground in batch:
+                try:
+                    address = get_address(campground.latitude, campground.longitude)
+                    if address:
+                        campground.address = address
+                        logger.info(f"Updated address for campground {campground.id}: {address}")
+                        batch_updated += 1
+                        updated_count += 1
+                except Exception as e:
+                    logger.warning(f"Error updating address for campground {campground.id}: {e}")
+            
+            # Toplu olarak güncelle
+            db.commit()
+            logger.info(f"Committed batch {current_batch} - updated {batch_updated} addresses")
+            
+            # API rate limit'e takılmamak için biraz bekle
+            if i + batch_size < len(campgrounds_without_address):
+                logger.info("Waiting 1 second before processing next batch...")
+                time.sleep(1)
+        
+        logger.info(f"Address update completed. Total updated: {updated_count}/{len(campgrounds_without_address)}")
+        return updated_count
+    
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Error updating addresses: {e}")
+        raise
+    
+    finally:
+        db.close()

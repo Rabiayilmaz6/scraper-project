@@ -56,6 +56,9 @@ def parse_args():
     parser.add_argument("--rebuild-db", action="store_true", help="Rebuild the database (WARNING: Deletes all data!)")
     parser.add_argument("--api", action="store_true", help="Start the API server")
     parser.add_argument("--port", type=int, default=8000, help="Port for the API server")
+    parser.add_argument("--update-addresses", action="store_true", help="Update addresses for campgrounds without address")
+    parser.add_argument("--address-batch-size", type=int, default=100, help="Batch size for address updates")
+    parser.add_argument("--force-update-addresses", action="store_true", help="Force update addresses even if they already exist")
     
     return parser.parse_args()
 
@@ -65,6 +68,7 @@ def main():
     """
     # Parse command line arguments
     args = parse_args()
+    
     
     try:
         # Rebuild the database if requested
@@ -79,6 +83,13 @@ def main():
             init_db()
             logger.info("Database initialized successfully")
         
+        # Update addresses if requested
+        if args.update_addresses:
+            logger.info("Updating addresses for campgrounds...")
+            from address_update_test import update_addresses
+            update_addresses(batch_size=args.address_batch_size, force_update=args.force_update_addresses)
+            logger.info("Address updates completed")
+            return
         # Run the scraper once if requested
         if args.run_once:
             logger.info("Running scraper once...")

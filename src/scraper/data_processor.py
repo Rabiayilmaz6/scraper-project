@@ -9,6 +9,7 @@ from sqlalchemy.dialects.postgresql import insert
 
 from src.models.campground import Campground
 from src.db.models import CampgroundDB
+from src.scraper.geocoding import get_address
 
 logging.basicConfig(
     level=logging.INFO,
@@ -60,6 +61,19 @@ class CampgroundProcessor:
             photo_url_str = None
             photo_urls_str = []
         
+        # Adres bilgisini al veya boş bırak
+        address = None
+        if hasattr(campground, 'address') and campground.address:
+            # Eğer adres zaten varsa kullan
+            address = campground.address
+        elif campground.latitude and campground.longitude:
+            # Yoksa ve koordinatlar varsa geocoding kullan
+            try:
+                address = get_address(campground.latitude, campground.longitude)
+                logger.info(f"Retrieved address for campground {campground.id}: {address}")
+            except Exception as e:
+                logger.warning(f"Error retrieving address for campground {campground.id}: {e}")
+        
         return CampgroundDB(
             id=campground.id,
             type=campground.type,
@@ -83,6 +97,7 @@ class CampgroundProcessor:
             price_low=campground.price_low,
             price_high=campground.price_high,
             availability_updated_at=campground.availability_updated_at,
+            address=address,
             updated_at=datetime.now()
         )
     
@@ -132,12 +147,14 @@ class CampgroundProcessor:
                     price_low=db_campground.price_low,
                     price_high=db_campground.price_high,
                     availability_updated_at=db_campground.availability_updated_at,
+                    address=db_campground.address,
                     updated_at=datetime.now()
                 )
                 
                 stmt = stmt.on_conflict_do_update(
                     index_elements=['id'],
                     set_={
+                        'address': db_campground.address,
                         'type': db_campground.type,
                         'links': links_json,
                         'name': db_campground.name,
@@ -159,6 +176,7 @@ class CampgroundProcessor:
                         'price_low': db_campground.price_low,
                         'price_high': db_campground.price_high,
                         'availability_updated_at': db_campground.availability_updated_at,
+                        'address': db_campground.address,
                         'updated_at': datetime.now()
                     }
                 )

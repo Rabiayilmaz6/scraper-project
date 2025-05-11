@@ -5,11 +5,11 @@ services:
   postgres:
     image: postgres:13
     environment:
-      POSTGRES_DB: case_study  # You can change those
+      POSTGRES_DB: case_study
       POSTGRES_USER: user
       POSTGRES_PASSWORD: password
     ports:
-      - "5432:5432"
+      - "5433:5432"   
 
   scraper:
     build: .
