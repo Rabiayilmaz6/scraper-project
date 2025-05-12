@@ -11,7 +11,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Get database URL from environment variables, or use default
-DB_URL = os.getenv("DB_URL", "postgresql://user:password@localhost:5432/case_study")
+DB_URL = "postgresql://user:password@localhost:5432/case_study"
 
 # Create SQLAlchemy engine
 engine = create_engine(DB_URL)

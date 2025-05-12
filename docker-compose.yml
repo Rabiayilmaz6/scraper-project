@@ -5,6 +5,7 @@ services:
   postgres:
     image: postgres:13
     environment:
+    
       POSTGRES_DB: case_study
       POSTGRES_USER: user
       POSTGRES_PASSWORD: password
@@ -18,4 +19,4 @@ services:
     volumes:
       - .:/src
     environment:
-      DB_URL: postgresql://user:password@postgres:5432/case_study
+      DB_URL: postgresql://user:password@postgres:5433/case_study
