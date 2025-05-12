@@ -29,7 +29,7 @@ class DyrtScraper:
         "south": 24.0
     }
     
-    GRID_SIZE = 10  # 10x10 grid = 100 sub-regions
+    GRID_SIZE = 20
     
     def __init__(self):
         """
